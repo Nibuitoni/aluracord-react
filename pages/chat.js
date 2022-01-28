@@ -1,12 +1,30 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMzMjIyNCwiZXhwIjoxOTU4OTA4MjI0fQ.zcemeQ4ZqcJkftXqhNU5s12l2BBt8vP-RimI09lRwdY'
+const SUPABASE_URL = 'https://opncvjflyvuxbayaunwt.supabase.co'
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+
 
 export default function ChatPage() {
-
+    
     const [message, setMessage] = React.useState('');
     const [messageList, setMessageList] = React.useState([]);
 
+    React.useEffect(() => {
+        supabaseClient
+            .from('messages')
+            .select('*')
+            .order('id', {ascending: false})
+            .then(({ data }) => {
+                console.log('Research data', data);
+                setMessageList(data);
+            });
+    }, []);
     /*
     // Usuário
     - Usuário digita no campo textarea
@@ -20,15 +38,24 @@ export default function ChatPage() {
     */
     function handleNewMessage(newMessage) {
         const message = {
-            id: messageList.length + 1,
-            de: 'nicolebuitoni',
+            // id: messageList.length + 1,
+            de: 'Nibuitoni',
             texto: newMessage,
         };
 
-        setMessageList([
-            message,
-            ...messageList,
-        ]);
+        supabaseClient
+            .from('messages')
+            .insert([
+                message
+            ])
+            .then(({ data }) => {
+                console.log('Creating message', data);
+                setMessageList([
+                    data[0],
+                    ...messageList,
+                ]);
+            });
+
         setMessage('');
     }
 
@@ -175,7 +202,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/nibuitoni.png`}
+                                src={`https://github.com/${message.de}.png`}
                             />
                             <Text tag="strong">
                                 {message.de}
