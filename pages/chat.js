@@ -1,17 +1,28 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js'
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMzMjIyNCwiZXhwIjoxOTU4OTA4MjI0fQ.zcemeQ4ZqcJkftXqhNU5s12l2BBt8vP-RimI09lRwdY'
 const SUPABASE_URL = 'https://opncvjflyvuxbayaunwt.supabase.co'
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-
-
+function listenMessagesRealTime(addMessage) {
+    return supabaseClient
+        .from('messages')
+        .on('INSERT', (responseLive) => {
+            addMessage(responseLive.new);
+        })
+        .subscribe();
+}
 
 export default function ChatPage() {
-    
+    const routing = useRouter();
+    const userLogged = routing.query.username;
+    console.log('routing.query',routing.query);
+    console.log('userLogged', userLogged);
     const [message, setMessage] = React.useState('');
     const [messageList, setMessageList] = React.useState([]);
 
@@ -24,22 +35,21 @@ export default function ChatPage() {
                 console.log('Research data', data);
                 setMessageList(data);
             });
+
+        listenMessagesRealTime((newMessage) => {
+            console.log('New message', newMessage);
+            setMessageList((actualListValue) => {
+                return [
+                    newMessage,
+                    ...actualListValue,
+                ]
+            });
+        });
     }, []);
-    /*
-    // Usuário
-    - Usuário digita no campo textarea
-    - Aperta enter para enviar
-    - Tem que adicionar o texto na listagem
-    
-    // Dev
-    - [X] Campo criado
-    - [X] Vamos usar o onChange usa o useState (ter if pra caso seja enter pra limpar a variavel)
-    - [X] Lista de messages 
-    */
+  
     function handleNewMessage(newMessage) {
         const message = {
-            // id: messageList.length + 1,
-            de: 'Nibuitoni',
+            de: userLogged,
             texto: newMessage,
         };
 
@@ -50,10 +60,6 @@ export default function ChatPage() {
             ])
             .then(({ data }) => {
                 console.log('Creating message', data);
-                setMessageList([
-                    data[0],
-                    ...messageList,
-                ]);
             });
 
         setMessage('');
@@ -97,13 +103,7 @@ export default function ChatPage() {
                     }}
                 >
                     <MessageList messages={messageList} />
-                    {/* {messageList.map((messageAtual) => {
-                        return (
-                            <li key={messageAtual.id}>
-                                {messageAtual.de}: {messageAtual.texto}
-                            </li>
-                        )
-                    })} */}
+        
                     <Box
                         as="form"
                         styleSheet={{
@@ -134,6 +134,12 @@ export default function ChatPage() {
                                 backgroundColor: appConfig.theme.colors.neutrals[800],
                                 marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
+                            }}
+                        />
+                        <ButtonSendSticker 
+                            onStickerClick={(sticker)=> {
+                                console.log('Save sticker in database', sticker);
+                                handleNewMessage(':sticker:' + sticker);
                             }}
                         />
                     </Box>
@@ -218,7 +224,14 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {message.texto}
+                        {/* Conditional: {message.texto.startsWith(':sticker:').toString()} */}
+                        {message.texto.startsWith(':sticker:')? 
+                        (
+                            <Image src={message.texto.replace(':sticker:', '')} />
+                        )
+                        : (
+                            message.texto
+                        )}
                     </Text>
                 );
             })}

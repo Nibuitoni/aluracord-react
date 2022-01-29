@@ -68,7 +68,7 @@ function Title(props) {
               onSubmit={ function (eventInfos) {
                 eventInfos.preventDefault();
                 // console.log('Someone submited the form')
-                routing.push('/chat');
+                routing.push(`/chat?username=${username}`);
               }}
               styleSheet={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
